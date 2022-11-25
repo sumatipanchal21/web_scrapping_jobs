@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <!-- CSS only -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+
+    <!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+  <title>Web Scrapper || Home</title>
+</head>
+<body>
+  <main class="container">
+    <h1>Job Scrapper</h2>
+    <h4> What job do you wnat to search?</h4>
+        <form action="/search" method="GET">
+        
+      <select name="web">
+        <option value = "none" selected hidden>Select Website</option>
+            <option  value="indeed">Indeed</option>
+            <option  value="dice">Dice</option>
+      </select>
+    <br><br>
+    <select name="tech">
+      <option value = "none" selected hidden>Select technology</option>
+          <option  value="python">Python</option>
+          <option  value="java">Java</option>
+          <option  value="Ruby Rails">Ruby Rails</option>
+          <option  value="PHP">PHP</option>
+          <option  value=".Net">.Net</option>
+          <option  value="Javascript">Javascript</option>
+          <option  value="c++">c++</option>
+          <option  value="Go lang">Go lang</option>
+  </select>
+      <br><br>
+            <button>Search</button>
+      </form>
+  </main>
+</body>
+</html>
