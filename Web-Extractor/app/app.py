@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
-run_with_ngrok(app)
+#run_with_ngrok(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scrapper.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -29,8 +29,6 @@ class User(db.Model):
 
 with app.app_context():
     db.create_all()
-
-
 
 
 @app.route('/')
@@ -100,21 +98,23 @@ def search():
     tech = request.args.get("tech")
     df = None
     name = None
-    #page = request.args.get("page")
-    #if page == None:
-        #page = 2
-    print(web, tech)
+    page = request.args.get("pages")
+    print(page, "-------------------------------------------------------------------------")
+    if page == None:
+        page = 5
+    page = int(page)
+    print(web, tech, page)
     if web == None or tech == None:
         return redirect("/")
     elif web == "indeed":
         name = "Indeed Data"
         scrap_naukri = ExtractIndeed(tech)
-        scrap_naukri.scrap_details()
+        scrap_naukri.scrap_details(page)
         scrap_naukri.generate_csv()
         df = pd.read_csv("./static/indeed_jobs_python.csv")
     elif web == "dice":
         name = "Dice Data"
-        extract_dice_jobs(tech)
+        extract_dice_jobs(tech,page)
         df = pd.read_csv("./static/job_dice.csv")
     return render_template("search.html", tables=[df.to_html(classes='data', justify='center')], titles=df.columns.values, name=name)
 
@@ -126,7 +126,7 @@ def export():
     if web == "indeed":
         csv_file = 'indeed_jobs_python.csv'
         csv_path = os.path.join(csv_dir, csv_file)
-        return send_file(csv_path,as_attachment=True)
+        return send_file(csv_path, as_attachment=True)
     elif web == "dice":
         csv_file = 'job_dice.csv'
         csv_path = os.path.join(csv_dir, csv_file)
