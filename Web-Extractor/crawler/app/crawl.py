@@ -1,24 +1,24 @@
-from flask import Flask, render_template, request, redirect, send_file,Response, session
-from extractor.indeed_extractor import ExtractIndeed
-import pandas as pd
-from extractor.dice_scrap import extract_dice_jobs
-from flask_session import Session
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, send_file
+from flask import redirect, request, session, render_template
 import os
-from flask_ngrok import run_with_ngrok
 from celery import Celery
+from celery.states import state, PENDING, SUCCESS
+from flask_session import Session
+import pandas as pd
+from celery.result import AsyncResult
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash,check_password_hash
+from login_required_decorator import login_required
 
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
-#run_with_ngrok(app)
+celery = Celery(app.name, broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+sess = Session()
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scrapper.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-@app.route("/")
-def home():
-    return render_template("home.html", name="JJ")
+
 
 class User(db.Model):
     id = db.Column('User_id', db.Integer, primary_key=True)
@@ -31,14 +31,10 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/')
-def view():
-    return "Hello, Flask is up and running!"
-
-
-# @app.route("/")
-# def home():
-#     return render_template("home.html", name="JJ")
+@app.route("/", endpoint="1")
+@login_required
+def home():
+    return render_template("home.html")
 
 
 @app.route("/signup", methods=('GET', 'POST'))
@@ -65,7 +61,6 @@ def signup():
             message = "New User Registerd"
 
             print("new user created")
-
     return render_template("signup.html", name="signup", message=message)
 
 
@@ -79,56 +74,87 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 print("User Logged In")
-                return jsonify({'message': 'Logged in successfully!'})
-                # return redirect(url_for('home'))
+                session['user'] = User
+                print(session.get('user'))
+                return redirect('/')
             else:
                 error = "Wrong password"
                 return render_template("login.html", name="login", error=error)
         else:
             error = "Email id not matched"
             return render_template("login.html", name="login", error=error)
-
     else:
         return render_template("login.html", name="login")
 
-@app.route("/search")
+@login_required
+@app.route("/logout", endpoint='2')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+
+@app.route("/search", endpoint="3")
+@login_required
 def search():
     web = request.args.get("web")
     session["web"] = request.args.get("web")
     tech = request.args.get("tech")
     df = None
     name = None
+    task_id = None
     page = request.args.get("pages")
-    print(page, "-------------------------------------------------------------------------")
+    page = int(page)
     if page == None:
         page = 5
-    page = int(page)
     print(web, tech, page)
     if web == None or tech == None:
         return redirect("/")
-    elif web == "indeed":
-        name = "Indeed Data"
-        scrap_naukri = ExtractIndeed(tech)
-        scrap_naukri.scrap_details(page)
-        scrap_naukri.generate_csv()
-        df = pd.read_csv("./static/indeed_jobs_python.csv")
-    elif web == "dice":
-        name = "Dice Data"
-        extract_dice_jobs(tech,page)
-        df = pd.read_csv("./static/job_dice.csv")
+    if web == "indeed":
+        c = celery.send_task("tasks.scrap_details", kwargs={"page":page})
+        session["task_id"] = c
+        task_id = session['task_id']
+
+    if web == "dice":
+        print("--------- DICE celery task")
+        c = celery.send_task("tasks.extract_dice_jobs", kwargs={"tech":tech, "page":page})
+        session["task_id"] = c
+        task_id = session['task_id']
+    return render_template("task.html", task_id=task_id)
+
+
+@app.route("/result/<task_id>", endpoint="4")
+@login_required
+def show_result(task_id):
+    web = session.get("web")
+    status = AsyncResult(task_id, app=celery)
+    df = None
+    name = None
+    if status.ready():
+        if web == "indeed":
+            try:
+                df = pd.read_csv("./static/indeed.csv")
+            except:
+                "NO DATA"
+        elif web == "dice":
+            try:
+                df = pd.read_csv("./static/dice.csv")
+            except:
+                "NO DATA"
+    else:
+        return render_template("pending.html", task_id=task_id)
     return render_template("search.html", tables=[df.to_html(classes='data', justify='center')], titles=df.columns.values, name=name)
 
 
 @app.route("/export")
 def export():
-    web =  session.get("web")
+    web = session.get("web")
     csv_dir = "./static"
     if web == "indeed":
-        csv_file = 'indeed_jobs_python.csv'
+        csv_file = 'indeed.csv'
         csv_path = os.path.join(csv_dir, csv_file)
         return send_file(csv_path, as_attachment=True)
     elif web == "dice":
-        csv_file = 'job_dice.csv'
+        csv_file = 'dice.csv'
         csv_path = os.path.join(csv_dir, csv_file)
         return send_file(csv_path, as_attachment=True)
     else:
@@ -136,4 +162,7 @@ def export():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.secret_key = 'super secret key'
+    app.config['SESSION_TYPE'] = 'filesystem'
+    sess.init_app(app)
+    app.run(debug=True)

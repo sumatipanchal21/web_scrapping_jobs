@@ -1,0 +1,9 @@
+#celery worker for Linux
+celery -A tasks.celery worker --loglevel=info
+
+#celery worker for windows
+celery -A tasks.celery worker -l info --pool=solo
+celery -A tasks.celery worker -l info --pool=prefork
+
+#celery beat
+celery -A tasks beat --loglevel=info

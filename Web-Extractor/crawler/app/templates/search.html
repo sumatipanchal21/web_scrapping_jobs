@@ -10,16 +10,15 @@
   <title>Web Scrapper || Search Result</title>
 </head>
 <body>
-  <main class="container">
-    <hgroup>
-   
-      <a href="/export" target="_blank"><button width="50%">Export to file</button></a>
-    </hgroup>
-  </main>
+<div>
+      <center>
+      <h1> <a href="/export" class="btn btn-warning" >Export to File</a></h1>
+      </center>
+  </div>
 
 <div class=page>
   <table border="1">
-  <h1 align="center">{{name}}</h1>
+  <h1 align="center">Data</h1>
   {% for table in tables %}
     {{ table|safe }}
   {% endfor %}
