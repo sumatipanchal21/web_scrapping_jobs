@@ -3,5 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Web-Extractor" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/celery-schedule/flask-celery-example" vcs="Git" />
   </component>
 </project>

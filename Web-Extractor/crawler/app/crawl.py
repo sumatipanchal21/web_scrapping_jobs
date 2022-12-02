@@ -52,6 +52,45 @@ class Indeeddata(db.Model):
     qualification = db.Column(db.String(300), unique=False, nullable=False)
 
 
+class Naukridata(db.Model):
+    id = db.Column( db.Integer, primary_key=True)
+    Designation = db.Column(db.String(500), unique=False, nullable=False)
+    Company_Name = db.Column(db.String(500), unique=False, nullable=False)
+    salary = db.Column(db.String(1000), unique=False, nullable=False)
+    Experience = db.Column(db.String(100), unique=False, nullable=False)
+    Location = db.Column(db.String(300), unique=False, nullable=False)
+    Role = db.Column(db.String(300), unique=False, nullable=False)
+    Skills = db.Column(db.String(300), unique=False, nullable=False)
+    Qualification = db.Column(db.String(300), unique=False, nullable=False)
+    Industry_Type = db.Column(db.String(300), unique=False, nullable=False)
+    Functional_Area = db.Column(db.String(300), unique=False, nullable=False)
+    Employment_Type = db.Column(db.String(300), unique=False, nullable=False)
+    Role_Category = db.Column(db.String(300), unique=False, nullable=False)
+    Address = db.Column(db.String(300), unique=False, nullable=False)
+    Post_By = db.Column(db.String(300), unique=False, nullable=False)
+    Post_Date = db.Column(db.String(300), unique=False, nullable=False)
+    Website = db.Column(db.String(300), unique=False, nullable=False)
+    Url = db.Column(db.String(300), unique=False, nullable=False)
+    Job_Description = db.Column(db.String(3000), unique=False, nullable=False)
+    About_Company = db.Column(db.String(1000), unique=False, nullable=False)
+
+
+def save_naukri_data_to_db():
+    data = []
+    c = mysql.connector.connect(host='localhost', user='root', database='scrap', password='12345',
+                                auth_plugin='mysql_native_password')
+    c_obj = c.cursor()
+    with open("./static/naukri.csv", 'r', encoding="latin-1") as f:
+        r = csv.reader(f)
+        for row in r:
+            data.append(row)
+
+    data_csv = "insert into Naukridata(Designation,Company_Name,salary,Experience,Location,Role,Skills,Qualification,Industry_Type,Functional_Area,Employment_Type,Role_Category,Address,Post_By,Post_Date,Website,Url,Job_Description,About_Company) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    c_obj.executemany(data_csv, data)
+    c.commit()
+    c_obj.close()
+
+
 def save_dice_data_to_db():
     data = []
     c = mysql.connector.connect(host='localhost', user='root', database='scrap', password='12345',
@@ -82,7 +121,6 @@ def save_indeed_data_to_db():
     c_obj.executemany(data_csv, data)
     c.commit()
     c_obj.close()
-
 
 with app.app_context():
     db.create_all()
@@ -143,6 +181,7 @@ def login():
     else:
         return render_template("login.html", name="login")
 
+
 @login_required
 @app.route("/logout", endpoint='2')
 def logout():
@@ -157,27 +196,30 @@ def search():
     session["web"] = request.args.get("web")
     tech = request.args.get("tech")
     page = request.args.get("pages")
+    location = request.args.get("location")
     df = None
     name = None
     task_id = None
     if page == None:
         page = 5
     page = int(page)
-    print(web, tech, page)
+    print(web, tech, location, page)
     if web == None or tech == None:
         return redirect("/")
     if web == "indeed":
-        c = celery.send_task("tasks.scrap_details", kwargs={"page": page})
+        c = celery.send_task("tasks.scrap_details", args=[tech, location], kwargs={ "page": page})
         session["task_id"] = c
         task_id = session['task_id']
-        #return jsonify(), 202, {'Location': url_for('taskstatus', task_id=task_id)}
     if web == "dice":
-        print("--------- DICE celery task")
-        c = celery.send_task("tasks.extract_dice_jobs", kwargs={"tech": tech, "page": page})
+        c = celery.send_task("tasks.extract_dice_jobs", args=[tech, location], kwargs={"page": page})
         session["task_id"] = c
         task_id = session['task_id']
-        #return render_template("home.html", task_id=task_id), 202, {'Location': url_for('taskstatus', task_id=task_id)}
+    if web == "naukri":
+        c = celery.send_task("tasks.scrap_naukari", args=[tech], kwargs={"page": page})
+        session["task_id"] = c
+        task_id = session['task_id']
     return render_template("task.html", task_id=task_id)
+
 
 @app.route("/result/<task_id>", endpoint="4")
 @login_required
@@ -242,8 +284,11 @@ def export():
         csv_path = os.path.join(csv_dir, csv_file)
         return send_file(csv_path, as_attachment=True)
     elif web == "dice":
-        save_dice_data_to_db()
         csv_file = 'dice.csv'
+        csv_path = os.path.join(csv_dir, csv_file)
+        return send_file(csv_path, as_attachment=True)
+    elif web == "naukri":
+        csv_file = 'naukri.csv'
         csv_path = os.path.join(csv_dir, csv_file)
         return send_file(csv_path, as_attachment=True)
     else:
