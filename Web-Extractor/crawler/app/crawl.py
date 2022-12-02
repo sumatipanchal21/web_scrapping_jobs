@@ -24,6 +24,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+
 class User(db.Model):
     id = db.Column('User_id', db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -31,27 +32,53 @@ class User(db.Model):
     password = db.Column(db.String(200), unique=True, nullable=False)
 
 
-class Dice(db.Model):
+class Dicedata(db.Model):
     id = db.Column( db.Integer, primary_key=True)
     Job_Title = db.Column(db.String(500), unique=False, nullable=False)
     Company_Name = db.Column(db.String(500), unique=False, nullable=False)
     description = db.Column(db.String(1000), unique=False, nullable=False)
-    Posted_Date = db.Column(db.DateTime, nullable=False)
+    Posted_Date = db.Column(db.String(100), unique=False, nullable=False)
     Job_Type = db.Column(db.String(300), unique=False, nullable=False)
     Location = db.Column(db.String(300), unique=False, nullable=False)
 
 
+class Indeeddata(db.Model):
+    id = db.Column( db.Integer, primary_key=True)
+    Company_Name = db.Column(db.String(500), unique=False, nullable=False)
+    Company_url = db.Column(db.String(500), unique=False, nullable=False)
+    salary = db.Column(db.String(1000), unique=False, nullable=False)
+    designation = db.Column(db.String(100), unique=False, nullable=False)
+    location = db.Column(db.String(300), unique=False, nullable=False)
+    qualification = db.Column(db.String(300), unique=False, nullable=False)
+
+
 def save_dice_data_to_db():
     data = []
-    c = mysql.connector.connect(host='localhost', user='root', database='dice', password='12345',
+    c = mysql.connector.connect(host='localhost', user='root', database='scrap', password='12345',
                                 auth_plugin='mysql_native_password')
     c_obj = c.cursor()
-    with open("/static/dice_jobs.csv", 'r', encoding="latin-1") as f:
+    with open("./static/indeed.csv", 'r', encoding="latin-1") as f:
         r = csv.reader(f)
         for row in r:
             data.append(row)
 
-    data_csv = "insert into dice(Job_Title,Company_Name,description,Posted_Date,Job_Type,Location) values(%s,%s,%s,%s,%s,%s)"
+    data_csv = "insert into dicedata(Job_Title,Company_Name,description,Posted_Date,Job_Type,Location) values(%s,%s,%s,%s,%s,%s)"
+    c_obj.executemany(data_csv, data)
+    c.commit()
+    c_obj.close()
+
+
+def save_indeed_data_to_db():
+    data = []
+    c = mysql.connector.connect(host='localhost', user='root', database='scrap', password='12345',
+                                auth_plugin='mysql_native_password')
+    c_obj = c.cursor()
+    with open("./static/indeed.csv", 'r', encoding="latin-1") as f:
+        r = csv.reader(f)
+        for row in r:
+            data.append(row)
+
+    data_csv = "insert into indeeddata(Company_Name,Company_url,salary,designation,location,qualification) values(%s,%s,%s,%s,%s,%s)"
     c_obj.executemany(data_csv, data)
     c.commit()
     c_obj.close()

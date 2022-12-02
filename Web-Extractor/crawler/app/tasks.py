@@ -7,7 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 from lxml.html import fromstring
-from crawl import save_dice_data_to_db
+from crawl import save_dice_data_to_db, save_indeed_data_to_db
 
 celery = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 
@@ -113,7 +113,7 @@ def extract_dice_jobs(tech="python", page=1):
         df['Job Type'] = job_types_list
         df['Location'] = location_list
         df.to_csv(f'./static/{FILE_NAME}', index=False)
-
+        save_dice_data_to_db()
 
 BASE_URL = 'https://in.indeed.com'
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
@@ -237,3 +237,4 @@ def scrap_details(page=1):
     df['location_list'] = location_list
     df['qualification_list'] = qualification_list
     df.to_csv(f'./static/{FILE_NAME}', index=False)
+    save_indeed_data_to_db()

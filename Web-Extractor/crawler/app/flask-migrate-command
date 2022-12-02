@@ -1,0 +1,17 @@
+#how to perform flask migration using flask-migrate
+#db used
+mysql
+
+#install package
+pip install Flask-Migrate
+
+# Import for Migrations
+from flask_migrate import Migrate, migrate
+
+# Settings for migrations
+migrate = Migrate(app, db)
+
+#create migrations
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
