@@ -25,10 +25,13 @@ margin-top: 40px;
       <h1> Your task in progress </h1>
   <br><br>
    <a href="/result/{{ task_id }}" class="btn btn-warning" >GET DATA</a>
+          <a href="http://localhost:5555/task/{{ task_id }}" class="btn btn-warning" > GET TASK DETAILS</a>
+          <a href="http://localhost:5555/api/task/info/{{ task_id }}" class="btn btn-warning" >Task Details</a>
+          <a href="http://localhost:5555/api/task/result/{{ task_id }}" class="btn btn-warning" >Task Result</a>
+          <a href="http://localhost:5555/tasks" class="btn btn-warning" >All Tasks Status</a>
 
       </center>
   </div>
-
 
 </body>
 </html>
