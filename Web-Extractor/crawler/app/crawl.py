@@ -32,11 +32,12 @@ migrate = Migrate(app, db)
 
 class User(db.Model):
     id = db.Column('User_id', db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100), unique=True, nullable=False)
-    last_name = db.Column(db.String(100), unique=True, nullable=False)
+    first_name = db.Column(db.String(100), unique=False, nullable=False)
+    last_name = db.Column(db.String(100), unique=False, nullable=False)
     email = db.Column(db.String(50), unique=True, nullable=False)
-    mobile = db.Column(db.String(50), unique=True, nullable=False)
+    mobile = db.Column(db.String(12), unique=True, nullable=False)
     password = db.Column(db.String(200), unique=True, nullable=False)
+    status = db.Column(db.String(100), unique=False, nullable=False)
     created_date = db.Column(
         db.DateTime, nullable=False, default=datetime.utcnow)
     updated_date = db.Column(db.DateTime, nullable=True, onupdate=datetime.now)
@@ -103,6 +104,7 @@ with app.app_context():
 @login_required
 def home():
     return render_template("home.html")
+    return redirect('/home')
 
 
 @app.route("/signup", methods=('GET', 'POST'))
@@ -133,7 +135,8 @@ def signup():
                             last_name=lastname,
                             email=email,
                             mobile=contact,
-                            password=hashed_password)
+                            password=hashed_password,
+                            status='ACTIVE')
             db.session.add(new_user)
             db.session.commit()
 
@@ -148,20 +151,19 @@ def login():
     msg = None
     if request.method == 'POST':
         email = request.form['email']
-        
-
         password = request.form['password']
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=email,status='ACTIVE').first()
         if user:
             if check_password_hash(user.password, password):
                 # session['user_id'] = user.id
                 # return redirect('/home')
                 return render_template('home.html')
+                # return redirect('/home')
             else:
                 error = "Wrong password"
                 return render_template("login.html", name="login", error=error)
         else:
-            error = "Email id not matched"
+            error = "User Does Not Exist"
             return render_template("login.html", name="login", error=error)
     else:
         return render_template("login.html", name="login")
@@ -188,7 +190,7 @@ def search():
         page = 5
     page = int(page)
     if web == None or tech == None:
-        return redirect("/")
+        return render_template("home.html")
     if web == "indeed":
         c = celery.send_task("tasks.scrap_details", kwargs={"page": page})
         session["task_id"] = c
@@ -265,6 +267,7 @@ def export():
     if web == "indeed":
         csv_file = 'indeed.csv'
         csv_path = os.path.join(csv_dir, csv_file)
+        print("========11===========")
         return send_file(csv_path, as_attachment=True)
     elif web == "dice":
         save_dice_data_to_db()
@@ -272,7 +275,7 @@ def export():
         csv_path = os.path.join(csv_dir, csv_file)
         return send_file(csv_path, as_attachment=True)
     else:
-        return redirect("/")
+        return render_template("home.html")
 
 
 if __name__ == "__main__":
